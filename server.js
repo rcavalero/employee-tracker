@@ -86,7 +86,7 @@ function mainMenu() {
           });
       }
       else if (choice === "Add Role") {
-          addEmployee();
+          addRole();
       }
       else if (choice === "Remove Role") {
           addEmployee();
@@ -99,7 +99,7 @@ function mainMenu() {
           });
       }
       else if (choice === "Add Department") {
-          addEmployee();
+          addDepartment();
       }
       else if (choice === "Remove Department") {
           addEmployee();
@@ -175,4 +175,80 @@ function addEmployee() {
         );
       });
   })
+};
+
+function addRole() {
+  connection.query("SELECT * FROM department", function (err, results) {
+    if (err) throw err;
+    inquirer
+      .prompt([
+        {
+          name: "title",
+          type: "input",
+          message: "What Role would you like to add?"
+        },
+        {
+          name: "salary",
+          type: "number",
+          message: "What is the Salary for this role?"
+        },
+        {
+          name: "dept",
+          type: "rawlist",
+          choices: function () {
+            var choiceArray = [];
+            for (var i = 0; i < results.length; i++) {
+              choiceArray.push(results[i].name);
+            }
+            return choiceArray;
+          },
+          message: "What Department applies to this Role?"
+        }
+      ])
+      .then(function (answer) {
+        var deptId;
+        for (var i = 0; i < results.length; i++) {
+          if (results[i].name === answer.dept) {
+            deptId = results[i].id;
+          }
+        }
+        connection.query(
+          "INSERT INTO role SET ?",
+          {
+            title: answer.title,
+            salary: answer.salary,
+            department_id: deptId,
+          },
+          function (err) {
+            if (err) throw err;
+            console.log(answer.title+" has been added to the database for the "+answer.dept+ " Department!");
+            mainMenu();
+          }
+        );
+      });
+  })
+};
+
+function addDepartment() {
+    inquirer
+      .prompt([
+        {
+          name: "name",
+          type: "input",
+          message: "What Department would you like to add?"
+        }
+      ])
+      .then(function ({name}) {
+        connection.query(
+          "INSERT INTO department SET ?",
+          {
+            name: name,
+          },
+          function (err) {
+            if (err) throw err;
+            console.log(name+" department added to database!");
+            mainMenu();
+          }
+        );
+      });
 };
