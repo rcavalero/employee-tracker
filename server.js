@@ -26,21 +26,10 @@ connection.connect(function (err) {
   // connection.end();
 });
 
-  // "View All Employees",
-  // "View All Employees by Department",
-  // "View All Employees by Manager",
-  // "Add Employee",
-  // "Remove Employee",
-  // "Update Employee Role",
-  // "Update Employee Manager",
-  // "View All Roles",
-  // "Add Role",
-  // "Remove Role",
-  // "View All Departments",
-  // "Add Department",
-  // "Remove Department",
-  // "View Department Budget",
-  // "View Budget by Department",
+// "Add Employee",  need to add code to add manager
+// "Remove Employee",
+// "Update Employee Manager",
+// "View Department Budget",
 
 
 function mainMenu() {
@@ -49,77 +38,76 @@ function mainMenu() {
     .then(function ({ choice }) {
 
       if (choice === "View All Employees") {
-          connection.query(queries.viewEmployees, function (err, results) {
-            if (err) throw err;
-            console.table(results)
-            mainMenu();
-          })
+        connection.query(queries.viewEmployees, function (err, results) {
+          if (err) throw err;
+          console.table(results)
+          mainMenu();
+        })
       }
       else if (choice === "View All Employees by Department") {
-          connection.query(queries.viewEmpByDept, function (err, results) {
-            if (err) throw err;
-            console.table(results)
-            mainMenu();
-          });
+        connection.query(queries.viewEmpByDept, function (err, results) {
+          if (err) throw err;
+          console.table(results)
+          mainMenu();
+        });
       }
       else if (choice === "View All Employees by Manager") {
-          connection.query(queries.viewEmpByDept, function (err, results) {
-            if (err) throw err;
-            console.table(results)
-            mainMenu();
-          });
-      } 
+        connection.query(queries.viewEmpByMgr, function (err, results) {
+          if (err) throw err;
+          console.table(results)
+          mainMenu();
+        });
+      }
       else if (choice === "Add Employee") {
-          addEmployee();
-      } 
+        addEmployee();
+      }
       else if (choice === "Remove Employee") {
-          addEmployee();
+        removeEmployee();
+      }
+      else if (choice === "Update Employee Role") {
+        updateEmployeeRole();
       }
       else if (choice === "Update Employee Manager") {
-          addEmployee();
+        updateEmployeeManager();
       }
       else if (choice === "View All Roles") {
-          connection.query(queries.viewRoles, function (err, results) {
-            if (err) throw err;
-            console.table(results)
-            mainMenu();
-          });
+        connection.query(queries.viewRoles, function (err, results) {
+          if (err) throw err;
+          console.table(results)
+          mainMenu();
+        });
       }
       else if (choice === "Add Role") {
-          addRole();
+        addRole();
       }
       else if (choice === "Remove Role") {
-          addEmployee();
+        removeRole();
       }
       else if (choice === "View All Departments") {
-          connection.query(queries.viewDepartments, function (err, results) {
-            if (err) throw err;
-            console.table(results)
-            mainMenu();
-          });
+        connection.query(queries.viewDepartments, function (err, results) {
+          if (err) throw err;
+          console.table(results)
+          mainMenu();
+        });
       }
       else if (choice === "Add Department") {
-          addDepartment();
+        addDepartment();
       }
       else if (choice === "Remove Department") {
-          addEmployee();
+        confirmRemoveDepartment();
       }
       else if (choice === "View Department Budget") {
-          connection.query(queries.viewDepartments, function (err, results) {
-            if (err) throw err;
-            console.table(results)
-            mainMenu();
-          });
+        viewDepartmentBudget();
       }
       else if (choice === "View Budget by Department") {
-          connection.query(queries.viewBudgetByDept, function (err, results) {
-            if (err) throw err;
-            console.table(results)
-            mainMenu();
-          });
+        connection.query(queries.viewBudgetByDept, function (err, results) {
+          if (err) throw err;
+          console.table(results)
+          mainMenu();
+        });
       }
       else {
-          connection.end();
+        connection.end();
       }
     })
 };
@@ -128,7 +116,6 @@ function addEmployee() {
   connection.query("SELECT * FROM role", function (err, results) {
     if (err) throw err;
     inquirer
-      // .prompt(tracker.addEmpChoices)
       .prompt([
         {
           name: "f_name",
@@ -141,12 +128,17 @@ function addEmployee() {
           message: "What is employee's Last Name?"
         },
         {
-          name: "role",
+          name: "roleId",
           type: "rawlist",
           choices: function () {
-            var choiceArray = [];
-            for (var i = 0; i < results.length; i++) {
-              choiceArray.push(results[i].title);
+            let choiceArray = [];
+            for (let i = 0; i < results.length; i++) {
+              let roleInfo = {
+                name: results[i].title,
+                value: results[i].id
+              };
+
+              choiceArray.push(roleInfo);
             }
             return choiceArray;
           },
@@ -154,28 +146,209 @@ function addEmployee() {
         }
       ])
       .then(function (answer) {
-        var empRoleId;
-        for (var i = 0; i < results.length; i++) {
-          if (results[i].title === answer.role) {
-            empRoleId = results[i].id;
-          }
-        }
         connection.query(
           "INSERT INTO employee SET ?",
           {
             first_name: answer.f_name,
             last_name: answer.l_name,
-            role_id: empRoleId,
+            role_id: answer.roleId,
           },
           function (err) {
             if (err) throw err;
-            console.log("New Employee Added!");
+            console.log("New Employee " + answer.f_name + " " + answer.l_name + "has been added!");
             mainMenu();
           }
         );
       });
   })
 };
+
+function removeEmployee() {
+  connection.query(queries.employeesToUpdate, function (err, results) {
+    if (err) throw err;
+    inquirer
+      .prompt([
+        {
+          name: "empId",
+          type: "rawlist",
+          choices: function () {
+            let choiceArray = [];
+            for (let i = 0; i < results.length; i++) {
+              let empInfo = {
+                name: results[i].Employee,
+                value: results[i].id
+              };
+
+              choiceArray.push(empInfo);
+            }
+            return choiceArray;
+          },
+          message: "Which Employee would you like to remove?"
+        }
+      ])
+      .then(function (answer) {
+
+        connection.query(
+          "DELETE FROM employee WHERE ?",
+          {
+            id: answer.empId
+          },
+          function (err) {
+            if (err) throw err;
+            console.log("Employee has been deleted from the database!");
+            mainMenu();
+          }
+        );
+      });
+  })
+};
+
+function updateEmployeeRole() {
+  connection.query(queries.employeesToUpdate, function (err, results) {
+    if (err) throw err;
+    inquirer
+      .prompt([
+        {
+          name: "empId",
+          type: "rawlist",
+          choices: function () {
+            let choiceArray = [];
+            for (let i = 0; i < results.length; i++) {
+              let empInfo = {
+                name: results[i].Employee,
+                value: results[i].id
+              };
+
+              choiceArray.push(empInfo);
+            }
+            return choiceArray;
+          },
+          message: "Which Employee would you like to update?"
+        }
+      ])
+      .then(function (employee) {
+        connection.query("SELECT * FROM role", function (err, results) {
+          if (err) throw err;
+          inquirer
+            .prompt([
+              {
+                name: "roleId",
+                type: "rawlist",
+                choices: function () {
+                  let roleArray = [];
+                  for (let i = 0; i < results.length; i++) {
+                    let roleInfo = {
+                      name: results[i].title,
+                      value: results[i].id
+                    };
+
+                    roleArray.push(roleInfo);
+                  }
+                  return roleArray;
+
+                },
+                message: "What is Employee's new Role?"
+              }]
+            ).then(function (newRole) {
+              connection.query(
+                "UPDATE employee SET ? WHERE ?",
+                [
+                  {
+                    role_id: newRole.roleId
+                  },
+                  {
+                    id: employee.empId
+                  }
+                ],
+                function (err) {
+                  if (err) throw err;
+                  console.log("Role has been updated for this employee in the database!");
+                  mainMenu();
+                }
+              );
+            });
+
+        })
+      })
+  })
+};
+
+function updateEmployeeManager() {
+  connection.query(queries.employeesToUpdate, function (err, results) {
+    if (err) throw err;
+    inquirer
+      .prompt([
+        {
+          name: "empId",
+          type: "rawlist",
+          choices: function () {
+            let choiceArray = [];
+            for (let i = 0; i < results.length; i++) {
+              let empInfo = {
+                name: results[i].Employee,
+                value: results[i].id
+              };
+
+              choiceArray.push(empInfo);
+            }
+            return choiceArray;
+          },
+          message: "Which Employee would you like to update?"
+        }
+      ])
+      .then(function (employee) {
+        connection.query(queries.employeesToUpdate, function (err, results) {
+          if (err) throw err;
+          inquirer
+            .prompt([
+              {
+                name: "mgrId",
+                type: "rawlist",
+                choices: function () {
+                  let mgrArray = [{ name: 'None', value: "null"  }];
+                  for (let i = 0; i < results.length; i++) {
+                    let mgrInfo = {
+                      name: results[i].Employee,
+                      value: results[i].id
+                    };
+
+                    mgrArray.push(mgrInfo);
+                  }
+                  console.log(mgrArray);
+                  
+                  return mgrArray;
+
+                },
+                message: "Who is Employee's new Manager?"
+              }]
+            ).then(function (newMgrId) {
+              if (newMgrId.mgrId = "null") {
+                  newMgrId.mgrId = null
+              } else {newMgrId.mgrId};
+              
+                connection.query(
+                "UPDATE employee SET ? WHERE ?",
+                [
+                  {
+                    manager_id: newMgrId.mgrId
+                  },
+                  {
+                    id: employee.empId
+                  }
+                ],
+                function (err) {
+                  if (err) throw err;
+                  console.log("Role has been updated for this employee in the database!");
+                  mainMenu();
+                }
+              );
+            });
+
+        })
+      })
+  })
+};
+
 
 function addRole() {
   connection.query("SELECT * FROM department", function (err, results) {
@@ -193,12 +366,17 @@ function addRole() {
           message: "What is the Salary for this role?"
         },
         {
-          name: "dept",
+          name: "deptId",
           type: "rawlist",
           choices: function () {
-            var choiceArray = [];
-            for (var i = 0; i < results.length; i++) {
-              choiceArray.push(results[i].name);
+            let choiceArray = [];
+            for (let i = 0; i < results.length; i++) {
+              let deptInfo = {
+                name: results[i].name,
+                value: results[i].id
+              };
+
+              choiceArray.push(deptInfo);
             }
             return choiceArray;
           },
@@ -206,22 +384,56 @@ function addRole() {
         }
       ])
       .then(function (answer) {
-        var deptId;
-        for (var i = 0; i < results.length; i++) {
-          if (results[i].name === answer.dept) {
-            deptId = results[i].id;
-          }
-        }
         connection.query(
           "INSERT INTO role SET ?",
           {
             title: answer.title,
             salary: answer.salary,
-            department_id: deptId,
+            department_id: answer.deptId,
           },
           function (err) {
             if (err) throw err;
-            console.log(answer.title+" has been added to the database for the "+answer.dept+ " Department!");
+            console.log(answer.title + " has been added to the database!");
+            mainMenu();
+          }
+        );
+      });
+  })
+};
+
+function removeRole() {
+  connection.query("SELECT * FROM role", function (err, results) {
+    if (err) throw err;
+    inquirer
+      .prompt([
+        {
+          name: "roleId",
+          type: "rawlist",
+          choices: function () {
+            let choiceArray = [];
+            for (let i = 0; i < results.length; i++) {
+              let roleInfo = {
+                name: results[i].title,
+                value: results[i].id
+              };
+
+              choiceArray.push(roleInfo);
+            }
+            return choiceArray;
+          },
+          message: "Which Role would you like to remove?"
+        }
+      ])
+      .then(function (answer) {
+
+        connection.query(
+          "DELETE FROM role WHERE ?",
+          {
+            id: answer.roleId
+          },
+          function (err) {
+            if (err) throw err;
+            console.log("Role has been deleted from the database!");
             mainMenu();
           }
         );
@@ -230,25 +442,89 @@ function addRole() {
 };
 
 function addDepartment() {
+  inquirer
+    .prompt([
+      {
+        name: "name",
+        type: "input",
+        message: "What Department would you like to add?"
+      }
+    ])
+    .then(function ({ name }) {
+      connection.query(
+        "INSERT INTO department SET ?",
+        {
+          name: name,
+        },
+        function (err) {
+          if (err) throw err;
+          console.log(name + " department added to database!");
+          mainMenu();
+        }
+      );
+    });
+};
+
+function confirmRemoveDepartment() {
+  inquirer
+    .prompt([
+      {
+        name: "removeDept",
+        type: "confirm",
+        message: "Roles associated with the selected Department will be removed also, proceed?"
+      }
+    ])
+    .then(function (answer) {
+
+      if (answer.removeDept === true) {
+        removeDepartment();
+      }
+      else {
+        mainMenu();
+      }
+    });
+};
+
+function removeDepartment() {
+  connection.query(queries.deptsForDeletion, function (err, results) {
+    if (err) throw err;
     inquirer
       .prompt([
         {
-          name: "name",
-          type: "input",
-          message: "What Department would you like to add?"
+          name: "deptId",
+          type: "rawlist",
+          choices: function () {
+            let choiceArray = [];
+            for (let i = 0; i < results.length; i++) {
+              let deptInfo = {
+                name: results[i].name,
+                value: results[i].id
+              };
+
+              choiceArray.push(deptInfo);
+            }
+            return choiceArray;
+          },
+          message: "Which Department would you like to remove?"
         }
       ])
-      .then(function ({name}) {
+      .then(function (answer) {
         connection.query(
-          "INSERT INTO department SET ?",
+          "DELETE FROM department WHERE ?",
           {
-            name: name,
+            id: answer.deptId
           },
           function (err) {
             if (err) throw err;
-            console.log(name+" department added to database!");
+            console.log("Department has been deleted from the database!");
             mainMenu();
           }
         );
       });
+  })
+};
+
+function viewDepartmentBudget() {
+  console.log("Work in Progress");
+  mainMenu();
 };
