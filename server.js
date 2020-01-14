@@ -535,6 +535,26 @@ function removeDepartment() {
 };
 
 function viewDepartmentBudget() {
-  console.log("Work in Progress");
-  mainMenu();
+  connection.query("SELECT * FROM department", function (err, departments) {
+    if (err) throw err;
+    const deptList = departments.map(department => ({ name: department.name, value: department.id}));
+    inquirer
+      .prompt([
+        {
+          name: "deptId",
+          type: "rawlist",
+          choices: deptList,
+          message: "Which Department's Budget would you like to see?"
+        }
+      ])
+      .then(function ({deptId}) {
+        console.log(deptId);
+        
+        connection.query(`SELECT name "Department", concat('$',format(sum(salary),0)) Budget FROM department dept JOIN role ON dept.id = role.department_id WHERE dept.id = ${deptId} GROUP BY name;`, function (err, results) {
+          if (err) throw err;
+          console.table(results)
+          mainMenu();
+        });
+      });
+  })
 };
