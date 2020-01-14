@@ -3,7 +3,7 @@ const tracker = require("./lib/empTrackerApp.js");
 const queries = require("./lib/empTrackerQueries.js");
 // const fs = require("fs");
 const inquirer = require("inquirer");
-const cTable = require('console.table');
+// const cTable = require('console.table');
 
 const connection = mysql.createConnection({
   host: "localhost",
@@ -113,9 +113,18 @@ function mainMenu() {
 };
 
 function addEmployee() {
-  connection.query("SELECT * FROM role", function (err, results) {
+  connection.query("SELECT * FROM role", function (err, roles) {
     if (err) throw err;
-    inquirer
+    const roleInfo = roles.map(role => ({ name: role.title, value: role.id}));
+  connection.query("SELECT * FROM employee", function (err, managers) {
+      if (err) throw err;
+      const mgrInfo = managers.map(manager => ({ name: manager.first_name+' '+ manager.last_name, value: manager.id}));
+      const noMgr = {name:"None", value: "None"};
+      mgrInfo.unshift(noMgr);
+      console.log(mgrInfo);
+      
+      
+      inquirer
       .prompt([
         {
           name: "f_name",
@@ -130,28 +139,28 @@ function addEmployee() {
         {
           name: "roleId",
           type: "rawlist",
-          choices: function () {
-            let choiceArray = [];
-            for (let i = 0; i < results.length; i++) {
-              let roleInfo = {
-                name: results[i].title,
-                value: results[i].id
-              };
-
-              choiceArray.push(roleInfo);
-            }
-            return choiceArray;
-          },
+          choices: roleInfo,
           message: "What role will this employee have?"
+        },
+        {
+          name: "mgrId",
+          type: "rawlist",
+          choices: mgrInfo,
+          message: "What Manager will this employee have?"
         }
       ])
       .then(function (answer) {
+        if (answer.mgrId === "None") {
+          answer.mgrId = null
+      } else {answer.mgrId};
+
         connection.query(
           "INSERT INTO employee SET ?",
           {
             first_name: answer.f_name,
             last_name: answer.l_name,
             role_id: answer.roleId,
+            manager_id: answer.mgrId
           },
           function (err) {
             if (err) throw err;
@@ -160,6 +169,7 @@ function addEmployee() {
           }
         );
       });
+    })
   })
 };
 
@@ -305,7 +315,7 @@ function updateEmployeeManager() {
                 name: "mgrId",
                 type: "rawlist",
                 choices: function () {
-                  let mgrArray = [{ name: 'None', value: "null"  }];
+                  let mgrArray = [{ name: 'None', value: "None"  }];
                   for (let i = 0; i < results.length; i++) {
                     let mgrInfo = {
                       name: results[i].Employee,
@@ -322,7 +332,7 @@ function updateEmployeeManager() {
                 message: "Who is Employee's new Manager?"
               }]
             ).then(function (newMgrId) {
-              if (newMgrId.mgrId = "null") {
+              if (newMgrId.mgrId === "None") {
                   newMgrId.mgrId = null
               } else {newMgrId.mgrId};
               
