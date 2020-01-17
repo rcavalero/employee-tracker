@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/rcavalero/employee-tracker#readme",
   "dependencies": {
+    "chalk-pipe": "^3.0.0",
     "console.table": "^0.10.0",
     "inquirer": "^7.0.3",
     "mysql": "^2.17.1"

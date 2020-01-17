@@ -14,9 +14,10 @@ var connection = require("./lib/server");
 const fs = require("fs");
 const inquirer = require("inquirer");
 const cTable = require('console.table');
+const chalkPipe = require('chalk-pipe');
+const warning = chalkPipe('orange.bold');
 // const employee = require("./employee.js");
 const queries = require("./lib/sql.js");
-const tools = require("./lib/tools.js");
 
 // These are the prompt questions
 const mainMenuChoices = [
@@ -36,7 +37,7 @@ const mainMenuChoices = [
       "Remove Role",
       "View All Departments",
       "Add Department",
-      "Remove Department",
+      // "Remove Department",
       "View Department Budget",
       "View Budget by Department",
       "Exit"],
@@ -45,8 +46,13 @@ const mainMenuChoices = [
   }
 ];
 
-console.clear();
-mainMenu();
+function start() {
+  console.clear();
+  console.log(warning("Welcome to Employee Tracker"));
+  mainMenu();
+};
+
+start();
 
 // prompts the user for what action they want to take
 // todo make this a switch statement
@@ -93,9 +99,9 @@ function mainMenu() {
         case "Add Department":
           addDepartment();
           break;
-        case "Remove Department":
-          confirmRemoveDepartment();
-          break;
+        // case "Remove Department":
+        //   removeDepartment();
+        //   break;
         case "View Department Budget":
           viewDepartmentBudget();
           break;
@@ -122,7 +128,7 @@ function viewInfo(sql) {
 };
 function addEmployee() {
   console.clear();
-  console.log("Adding new Employee:");
+  console.log(warning("Adding new Employee:"));
   connection.query("SELECT * FROM role", function (err, roles) {
     if (err) throw err;
     const roleList = roles.map(role => ({ name: role.title, value: role.id }));
@@ -189,6 +195,13 @@ function addEmployee() {
 function confirmRemoveEmployee() {
   console.clear();
   connection.query(queries.employeesForDeletion, function (err, results) {
+    if (results.length <1){
+      console.log(warning("Only Employees not designated as a Manager are eligible for removal."));
+      console.log(warning("No Employees are eligible for removal."));
+      mainMenu();
+      return;
+      }
+
     const empList = results.map(employee => ({ Name: employee.Employee, Dept: employee.Dept, Title: employee.Title }));
     console.table(empList);
     if (err) throw err;
@@ -197,7 +210,7 @@ function confirmRemoveEmployee() {
       {
         name: "removeEmp",
         type: "confirm",
-        message: "Only employees not designated as a Manager can be removed, proceed?"
+        message: warning("Only employees not designated as a Manager are eligible for removal, proceed?")
       }
     ])
     .then(function ({ removeEmp }) {
@@ -235,7 +248,7 @@ function removeEmployee() {
           function (err) {
             if (err) throw err;
             console.clear();
-            console.log("Employee has been removed!");
+            console.log(warning("Employee has been removed!"));
             mainMenu();
           }
         );
@@ -245,6 +258,8 @@ function removeEmployee() {
 
 function updateEmployeeRole() {
   console.clear();
+  console.log(warning("Updating Employee Role"));
+  
   connection.query("SELECT * from employee", function (err, results) {
     if (err) throw err;
     const empList = results.map(employee => ({ name: employee.first_name + ' ' + employee.last_name, value: employee.id }));
@@ -285,7 +300,7 @@ function updateEmployeeRole() {
                 function (err) {
                   if (err) throw err;
                   console.clear();
-                  console.log("Role has been updated for this employee!");
+                  console.log(warning("Role has been updated for this employee!"));
                   mainMenu();
                 }
               );
@@ -298,6 +313,8 @@ function updateEmployeeRole() {
 
 function updateEmployeeManager() {
   console.clear();
+  console.log(warning("Updating Employee Manager"));
+  
   connection.query("SELECT * from employee", function (err, results) {
     if (err) throw err;
     const empList = results.map(employee => ({ name: employee.first_name + ' ' + employee.last_name, value: employee.id }));
@@ -344,7 +361,7 @@ function updateEmployeeManager() {
                 function (err) {
                   if (err) throw err;
                   console.clear();
-                  console.log("Manager has been updated for this employee!");
+                  console.log(warning("Manager has been updated for this employee!"));
                   mainMenu();
                 }
               );
@@ -356,7 +373,7 @@ function updateEmployeeManager() {
 
 function addRole() {
   console.clear();
-  console.log("Adding new Role:");
+  console.log(warning("Adding new Role:"));
   connection.query("SELECT * FROM department", function (err, results) {
     if (err) throw err;
     const deptList = results.map(dept => ({ name: dept.name, value: dept.id }));
@@ -396,7 +413,7 @@ function addRole() {
           function (err) {
             if (err) throw err;
             console.clear();
-            console.log(answer.title + " has been added!");
+            console.log(warning(answer.title + " has been added!"));
             mainMenu();
           }
         );
@@ -407,6 +424,12 @@ function addRole() {
 function confirmRemoveRole() {
   console.clear();
   connection.query(queries.rolesForDeletion, function (err, results) {
+    if (results.length <1){
+      console.log("Only Roles not assigned to employees are eligible for removal.");
+      console.log("No Roles are eligible for removal.");
+      mainMenu();
+      return;
+      }
     const roleList = results.map(role => ({ Title: role.title, Department: role.Department}));
     console.table(roleList);
     if (err) throw err;
@@ -415,11 +438,11 @@ function confirmRemoveRole() {
       {
         name: "remRole",
         type: "confirm",
-        message: "Only roles not assigned to employees can be removed, proceed?"
+        message: "Only roles not assigned to employees are eligible for removal, proceed?"
       }
     ])
     .then(function ({ remRole }) {
-        console.log(remRole);
+        // console.log(remRole);
         
       if (remRole === true) {
         removeRole();
@@ -435,6 +458,7 @@ function removeRole() {
   console.clear();
   connection.query(queries.rolesForDeletion, function (err, results) {
     if (err) throw err;
+
     const roleList = results.map(role => ({ name: role.title, value: role.id }));
     inquirer
       .prompt([
@@ -466,7 +490,7 @@ function removeRole() {
 
 function addDepartment() {
   console.clear();
-  console.log("Adding new Department:");
+  console.log(warning("Adding new Department:"));
   inquirer
     .prompt([
       {
@@ -485,7 +509,7 @@ function addDepartment() {
         function (err) {
           if (err) throw err;
           console.clear();
-          console.log(name + " department has been added!");
+          console.log(warning(name + " department has been added!"));
           mainMenu();
         }
       );
@@ -514,9 +538,14 @@ function confirmRemoveDepartment() {
 
 function removeDepartment() {
   console.clear();
-  console.log("Only Departments not assigned to Employees can be removed.");
+  console.log(warning("Only Departments not assigned to Employees can be removed."));
   connection.query(queries.deptsForDeletion, function (err, results) {
     if (err) throw err;
+    if (results.length <1){
+      console.log("No departments are eligible for removal.");
+      mainMenu();
+      return;
+      }
     const deptList = results.map(department => ({ name: department.name, value: department.id }));
 
     inquirer
@@ -530,6 +559,26 @@ function removeDepartment() {
         }
       ])
       .then(function ({ deptId }) {
+        connection.query(`SELECT role.id, role.title, dept.name Department FROM department dept JOIN role ON dept.id = role.department_id WHERE dept.id = ${deptId};`, function (err, roles) {
+          if (err) throw err;
+          const roleList = roles.map(role => ({ Title: role.title }));
+          console.table(roleList);
+
+        inquirer
+        .prompt([
+          {
+            name: "removeDept",
+            type: "confirm",
+            message: warning("Above Roles associated with the selected Department will be removed also, proceed?")
+          }
+        ])
+        .then(function ({ removeDept }) {
+    
+          if (removeDept === false) {
+            mainMenu();
+            return;
+          }
+        // })
         connection.query(
           "DELETE FROM department WHERE ?",
           {
@@ -538,12 +587,13 @@ function removeDepartment() {
           function (err) {
             if (err) throw err;
             console.clear();
-            console.log("Department has been removed!");
+            console.log(warning("Department has been removed!"));
             mainMenu();
-          }
-        );
+          });
+        });  
       });
-  })
+    });
+  });
 };
 
 function viewDepartmentBudget() {
@@ -557,14 +607,19 @@ function viewDepartmentBudget() {
           name: "deptId",
           type: "rawlist",
           choices: deptList,
-          message: "Which Department's Budget would you like to see?",
+          message: warning("Which Department's Budget would you like to see?"),
           pageSize: 10
         }
       ])
       .then(function ({ deptId }) {
-        connection.query(`SELECT name "Department", concat('$',format(sum(salary),0)) Budget FROM department dept JOIN role ON dept.id = role.department_id WHERE dept.id = ${deptId} GROUP BY name;`, function (err, results) {
+        connection.query(`SELECT name "Department", concat('$',format(sum(salary),0)) Budget FROM department dept JOIN role ON dept.id = role.department_id join employee emp ON role.id = emp.role_id WHERE dept.id = ${deptId} GROUP BY name;`, function (err, results) {
           if (err) throw err;
-          console.table(results)
+          if (results.length <1){
+            console.log(warning("Selected Department has no employees."));
+            mainMenu();
+            return;
+            }
+                console.table(results)
           mainMenu();
         });
       });
